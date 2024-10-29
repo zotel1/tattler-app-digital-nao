@@ -1,15 +1,23 @@
 {
-  "name": "5-api-rest-full",
-  "version": "1.0.0",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
-  "devDependencies": {
-    "standard": "^17.1.2"
-  }
+    "name": "tattler-app-digital-nao",
+    "version": "1.0.0",
+    "description": "Ultimo proyecto, API REST full para digital nao",
+    "type": "commonjs",
+    "scripts": {
+        "start": "node --watch --no-warnings ./src/server.js",
+        "test": "node --no-warnings --experimental-fetch ./tests/proyecto2.test.js",
+        "stop": "killall -9 node",
+        "eslint": "eslint ./src"
+    },
+    "keywords": [],
+    "author": "Sigel Cristian",
+    "license": "MIT",
+    "dependencies": {
+        "dotenv": "^16.3.1",
+        "express": "^4.18.2",
+        "mongodb": "^5.6.0"
+    },
+    "devDependencies": {
+        "eslint": "^8.44.0"
+    }
 }
