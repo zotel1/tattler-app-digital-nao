@@ -2,7 +2,7 @@
     "name": "tattler-app-digital-nao",
     "version": "1.0.0",
     "description": "Ultimo proyecto, API REST full para digital nao",
-    "type": "commonjs",
+    "type": "module",
     "scripts": {
         "start": "node --watch --no-warnings ./src/server.js",
         "test": "node --no-warnings --experimental-fetch ./tests/proyecto2.test.js",
