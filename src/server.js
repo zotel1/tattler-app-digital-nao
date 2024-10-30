@@ -111,6 +111,25 @@ server.put('/api/v1/restaurantes/:id', async (req, res) => {
     }
 });
 
+// Eliminar un restaurante (metodo DELETE): Ruta DELETE http://127.0.0.1:3005/api/v1/restaurantes/:restaurant_id
+server.delete('/api/v1/restaurantes/:id', async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const collection = await connectToCollection('restaurantes');
+        const restaurante = await collection.findOne({ id: { $eq: id } });
+
+        if (!restaurante) return res.status(400).send(messageNotFound);
+
+        await collection.deleneOne({ id });
+        res.status(200).send(JSON.stringify({ message: 'Restaurante eliminado', payload: { id, ...restaurante } }));
+    } catch (error) {
+        console.log(error.message);
+        res.status(500).send(messageErrorServer);
+    } finally {
+        await desconnect();
+    }
+});
 
 
 // Método oyente de solicitudes
