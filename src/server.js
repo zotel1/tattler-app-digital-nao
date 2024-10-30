@@ -85,6 +85,31 @@ server.post('/api/v1/restaurantes', async (req, res) => {
     }
 });
 
+// Actualizar un restaurante (METODO PUT): Ruta PUT http://127.0.0.1:3005/api/v1/restaurantes/:restaurant_id
+server.put('/api/v1/restaurantes/:id', async (req, res) => {
+    
+    const { id } = req.params;
+    const { name, borough, cuisine, address } = req.body;
+
+    if (!name || !borough || !cuisine || !address ) return res.status(400).send(messageMissingData);
+
+    try {
+        const collection = await connectToCollection('restaurantes');
+        let restaurante = await collection.findOne({ id : { $eq: id }});
+
+        if (!restaurante) return res.status(400).send(messageNotFound);
+
+        restaurante = { name, borough, cuisine, address };
+
+        await collection.updateOne({ id }, { $set: restaurante });
+        return res.status(200).send(JSON.stringify({message: 'Restaurante actualizado', payload: { id, ...restaurante } }));
+    } catch (error) {
+        console.log(error.message);
+        res.status(500).send(messageErrorServer);
+    } finally {
+        await desconnect();
+    }
+});
 
 
 
