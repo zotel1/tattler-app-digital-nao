@@ -131,6 +131,11 @@ server.delete('/api/v1/restaurantes/:id', async (req, res) => {
     }
 });
 
+// Control de rutas inexistentes
+server.use('*', (req, res) => {
+    res.status(404).send(`<h1>Error 404</h1><h3>La URL indicada no existe en el servidor</h3>`);
+});
+
 
 // Método oyente de solicitudes
 server.listen(process.env.SERVER_PORT, process.env.SERVEROST, () => {
