@@ -39,6 +39,26 @@ server.get('/api/v1/restaurantes', async (req, res) => {
     }
 });
 
+// Obtener un restaurante específico (metodo GET): Ruta GET http://127.0.0.1:3005/api/v1/restaurantes/:restaurant_id
+server.get('/api/v1/restaurantes/:id', async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const collesction = await connectToCollection('restaurantes');
+        const restaurante = await collection.findOne({ id: { $eq: id }});
+
+        if (!restaurante) return res.status(400).send(messageNotFound);
+
+        res.status(200).send(JSON.stringify({ payload: restaurante }));
+    } catch (error) {
+        console.log(error.message);
+        res.status(500).send(messageErrorServer);
+    } finally {
+        await desconnect();
+    }
+});
+
+
 // Método oyente de solicitudes
 server.listen(process.env.SERVER_PORT, process.env.SERVEROST, () => {
     console.log(`Ejecutandose en http://${process.env.SERVER_HOST}:${process.env.SERVER_PORT}/api/v1/restaurantes`);
