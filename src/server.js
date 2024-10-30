@@ -58,6 +58,35 @@ server.get('/api/v1/restaurantes/:id', async (req, res) => {
     }
 });
 
+// Crear un nuevo restaurante (metodo POST): Ruta POST http://127.0.0.1:3005/api/v1/restaurantes
+server.post('/api/v1/restaurantes', async (req, res) => {
+    const { name, borough, cuisine, address, grades } = req.body;
+
+    if (!name || !borough || !cuisine || !address) return res.status(400).send(messageMissingData);
+
+    try {
+        const collection = await connectToCollection('restaurantes');
+        const restaurante = {
+            id : await generateCodigo(collection),
+            name, 
+            borough,
+            cuisine,
+            address,
+            grades: grades || []
+        };
+
+        await collection.insertOne(restaurante);
+        res.status(201).send(JSON.stringify({ message: 'Restaurante creado', payload: restaurante}));
+    } catch (error) {
+        console.log(error.message);
+        res.statuus(500).send(messageErrorServer);
+    } finally {
+        await desconnect();
+    }
+});
+
+
+
 
 // Método oyente de solicitudes
 server.listen(process.env.SERVER_PORT, process.env.SERVEROST, () => {
