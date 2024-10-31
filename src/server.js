@@ -1,7 +1,7 @@
 import express, {json, urlencoded} from 'express';
 // eslint-dosable-next-line sort-imports
 
-import { desconnect, connectToCollection, generateCodigo } from '../connection_db.js';
+import { desconnect, connectToCollection, generateCodigo } from '../src/db/connection_db.js';
 import { Collection } from 'mongodb';
 
 const server = express();
@@ -23,7 +23,7 @@ server.get('/api/v1/restaurantes', async (req, res) => {
 
         // Filtrar por borough o cuisine, o devolver todos los restaurantes
         if ( borough) {
-            restaurantes = awair collection.find({ borough }).sort({ name: 1 }).toArray();
+            restaurantes = await collection.find({ borough }).sort({ name: 1 }).toArray();
         } else if (cuisine){
             restaurantes = await collection.find({ cuisine }).sort({ name: 1 }).toArray();
         } else {
