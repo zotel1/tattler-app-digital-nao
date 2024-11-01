@@ -1,7 +1,7 @@
 import express, {json, urlencoded} from 'express';
 // eslint-dosable-next-line sort-imports
 
-import { desconnect, connectToCollection, generateCodigo } from '../src/db/connection_db.js';
+import { desconnect, connectToCollection, generateCodigo } from './database/connection_db.js';
 import { Collection } from 'mongodb';
 
 const server = express();
