@@ -86,20 +86,20 @@ server.post('/api/v1/restaurantes', async (req, res) => {
 
 // Actualizar un restaurante (método PUT)
 server.put('/api/v1/restaurantes/:id', async (req, res) => {
-    const { id } = req.params;
+    const { restaurant_id } = req.params;
     const { name, borough, cuisine, address } = req.body;
 
     if (!name || !borough || !cuisine || !address) return res.status(400).send(messageMissingData);
 
     try {
         const collection = await connectToCollection('restaurantes');
-        let restaurante = await collection.findOne({ id: { $eq: id } });
+        let restaurante = await collection.findOne({ restaurant_id: { $eq: restaurant_id } });
 
         if (!restaurante) return res.status(400).send(messageNotFound);
 
         restaurante = { name, borough, cuisine, address };
 
-        await collection.updateOne({ id }, { $set: restaurante });
+        await collection.updateOne({ restaurant_id }, { $set: restaurante });
         return res.status(200).send(JSON.stringify({ message: 'Restaurante actualizado', payload: { id, ...restaurante } }));
     } catch (error) {
         console.log(error.message);
@@ -111,11 +111,11 @@ server.put('/api/v1/restaurantes/:id', async (req, res) => {
 
 // Eliminar un restaurante (método DELETE)
 server.delete('/api/v1/restaurantes/:id', async (req, res) => {
-    const { id } = req.params;
+    const { restaurant_id } = req.params;
 
     try {
         const collection = await connectToCollection('restaurantes');
-        const restaurante = await collection.findOne({ id: { $eq: id } });
+        const restaurante = await collection.findOne({ restaurant_id: { $eq: restaurant_id } });
 
         if (!restaurante) return res.status(400).send(messageNotFound);
 

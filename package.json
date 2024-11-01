@@ -5,6 +5,7 @@
     "type": "module",
     "scripts": {
         "start": "node --watch --no-warnings ./src/server.js",
+        "start:local": "NODE_ENV node --watch --no-warnings ./src/local.js",
         "test": "node --no-warnings --experimental-fetch ./tests/proyecto2.test.js",
         "stop": "killall -9 node",
         "eslint": "eslint ./src"
