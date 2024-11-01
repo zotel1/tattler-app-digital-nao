@@ -44,7 +44,7 @@ server.get('/api/v1/restaurantes/:id', async (req, res) => {
     const { id } = req.params;
 
     try {
-        const collesction = await connectToCollection('restaurantes');
+        const collection = await connectToCollection('restaurantes');
         const restaurante = await collection.findOne({ id: { $eq: id }});
 
         if (!restaurante) return res.status(400).send(messageNotFound);
@@ -79,7 +79,7 @@ server.post('/api/v1/restaurantes', async (req, res) => {
         res.status(201).send(JSON.stringify({ message: 'Restaurante creado', payload: restaurante}));
     } catch (error) {
         console.log(error.message);
-        res.statuus(500).send(messageErrorServer);
+        res.status(500).send(messageErrorServer);
     } finally {
         await desconnect();
     }
@@ -121,7 +121,7 @@ server.delete('/api/v1/restaurantes/:id', async (req, res) => {
 
         if (!restaurante) return res.status(400).send(messageNotFound);
 
-        await collection.deleneOne({ id });
+        await collection.deleteOne({ id });
         res.status(200).send(JSON.stringify({ message: 'Restaurante eliminado', payload: { id, ...restaurante } }));
     } catch (error) {
         console.log(error.message);
