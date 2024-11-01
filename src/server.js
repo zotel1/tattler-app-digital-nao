@@ -1,30 +1,29 @@
-import express, {json, urlencoded} from 'express';
-// eslint-dosable-next-line sort-imports
+import express, { json, urlencoded } from 'express';
+// eslint-disable-next-line sort-imports
 
-import { desconnect, connectToCollection, generateCodigo } from './database/connection_db.js';
-import { Collection } from 'mongodb';
+import { desconnect, connectToCollection, generateCodigo } from './connections/mongo_connections_db.js';
 
 const server = express();
 
-const messageNotFound = JSON.stringify({ message: 'No hay ningun restaurante registrado con ese nombre.' });
+const messageNotFound = JSON.stringify({ message: 'No hay ningún restaurante registrado con ese nombre.' });
 const messageMissingData = JSON.stringify({ message: 'Faltan datos relevantes.' });
-const messageErrorServer = JSON.stringify({ message: 'Se ha generado un error en el servidor.'});
+const messageErrorServer = JSON.stringify({ message: 'Se ha generado un error en el servidor.' });
 
 // Middlewares
 server.use(json());
 server.use(urlencoded({ extended: true }));
 
-// Obtener todos los registros de los restaurantes disponibles (metodo GET): Ruta GET http://127.0.0.1:3005/api/v1/restaurantes
+// Obtener todos los registros de los restaurantes disponibles (método GET)
 server.get('/api/v1/restaurantes', async (req, res) => {
     const { borough, cuisine } = req.query;
     let restaurantes = [];
 
-    try { const collection = await connectToCollection('restaurantes');
+    try {
+        const collection = await connectToCollection('restaurantes');
 
-        // Filtrar por borough o cuisine, o devolver todos los restaurantes
-        if ( borough) {
+        if (borough) {
             restaurantes = await collection.find({ borough }).sort({ name: 1 }).toArray();
-        } else if (cuisine){
+        } else if (cuisine) {
             restaurantes = await collection.find({ cuisine }).sort({ name: 1 }).toArray();
         } else {
             restaurantes = await collection.find().toArray();
@@ -39,13 +38,13 @@ server.get('/api/v1/restaurantes', async (req, res) => {
     }
 });
 
-// Obtener un restaurante específico (metodo GET): Ruta GET http://127.0.0.1:3005/api/v1/restaurantes/:restaurant_id
+// Obtener un restaurante específico (método GET)
 server.get('/api/v1/restaurantes/:id', async (req, res) => {
     const { id } = req.params;
 
     try {
         const collection = await connectToCollection('restaurantes');
-        const restaurante = await collection.findOne({ id: { $eq: id }});
+        const restaurante = await collection.findOne({ id: { $eq: id } });
 
         if (!restaurante) return res.status(400).send(messageNotFound);
 
@@ -58,7 +57,7 @@ server.get('/api/v1/restaurantes/:id', async (req, res) => {
     }
 });
 
-// Crear un nuevo restaurante (metodo POST): Ruta POST http://127.0.0.1:3005/api/v1/restaurantes
+// Crear un nuevo restaurante (método POST)
 server.post('/api/v1/restaurantes', async (req, res) => {
     const { name, borough, cuisine, address, grades } = req.body;
 
@@ -67,8 +66,8 @@ server.post('/api/v1/restaurantes', async (req, res) => {
     try {
         const collection = await connectToCollection('restaurantes');
         const restaurante = {
-            id : await generateCodigo(collection),
-            name, 
+            id: await generateCodigo(collection),
+            name,
             borough,
             cuisine,
             address,
@@ -76,7 +75,7 @@ server.post('/api/v1/restaurantes', async (req, res) => {
         };
 
         await collection.insertOne(restaurante);
-        res.status(201).send(JSON.stringify({ message: 'Restaurante creado', payload: restaurante}));
+        res.status(201).send(JSON.stringify({ message: 'Restaurante creado', payload: restaurante }));
     } catch (error) {
         console.log(error.message);
         res.status(500).send(messageErrorServer);
@@ -85,24 +84,23 @@ server.post('/api/v1/restaurantes', async (req, res) => {
     }
 });
 
-// Actualizar un restaurante (METODO PUT): Ruta PUT http://127.0.0.1:3005/api/v1/restaurantes/:restaurant_id
+// Actualizar un restaurante (método PUT)
 server.put('/api/v1/restaurantes/:id', async (req, res) => {
-    
     const { id } = req.params;
     const { name, borough, cuisine, address } = req.body;
 
-    if (!name || !borough || !cuisine || !address ) return res.status(400).send(messageMissingData);
+    if (!name || !borough || !cuisine || !address) return res.status(400).send(messageMissingData);
 
     try {
         const collection = await connectToCollection('restaurantes');
-        let restaurante = await collection.findOne({ id : { $eq: id }});
+        let restaurante = await collection.findOne({ id: { $eq: id } });
 
         if (!restaurante) return res.status(400).send(messageNotFound);
 
         restaurante = { name, borough, cuisine, address };
 
         await collection.updateOne({ id }, { $set: restaurante });
-        return res.status(200).send(JSON.stringify({message: 'Restaurante actualizado', payload: { id, ...restaurante } }));
+        return res.status(200).send(JSON.stringify({ message: 'Restaurante actualizado', payload: { id, ...restaurante } }));
     } catch (error) {
         console.log(error.message);
         res.status(500).send(messageErrorServer);
@@ -111,7 +109,7 @@ server.put('/api/v1/restaurantes/:id', async (req, res) => {
     }
 });
 
-// Eliminar un restaurante (metodo DELETE): Ruta DELETE http://127.0.0.1:3005/api/v1/restaurantes/:restaurant_id
+// Eliminar un restaurante (método DELETE)
 server.delete('/api/v1/restaurantes/:id', async (req, res) => {
     const { id } = req.params;
 
@@ -136,8 +134,7 @@ server.use('*', (req, res) => {
     res.status(404).send(`<h1>Error 404</h1><h3>La URL indicada no existe en el servidor</h3>`);
 });
 
-
 // Método oyente de solicitudes
-server.listen(process.env.SERVER_PORT, process.env.SERVEROST, () => {
-    console.log(`Ejecutandose en http://${process.env.SERVER_HOST}:${process.env.SERVER_PORT}/api/v1/restaurantes`);
+server.listen(process.env.SERVER_PORT, process.env.SERVER_HOST, () => {
+    console.log(`Ejecutándose en http://${process.env.SERVER_HOST}:${process.env.SERVER_PORT}/api/v1/restaurantes`);
 });
