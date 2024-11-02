@@ -22,5 +22,6 @@ export async function desconnect() {
 export async function generateCodigo(data) {
     const maxCodigo = data.reduce((max, restaurant) => {
         return Math.max(max, parseInt(restaurant.restaurant_id))
-    })
+    }, 0);
+    return (maxCodigo + 1).toString();
 }
