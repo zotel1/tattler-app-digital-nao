@@ -1,5 +1,5 @@
 import express, { json, urlencoded } from 'express';
-import { desconnect, load, loadRestaurantsData } from './connections/local_connections_db.js';
+import { desconnect, generateCodigo, load, loadRestaurantsData } from './connections/local_connections_db.js';
 
 const server = express();
 
@@ -48,4 +48,36 @@ server.get('/api/v1/restaurantes/:id', async (req, res) => {
         res.status(500).send(messageErrorServer);
     }
 });
+
+// crear un nuevo restaurante (método POST)
+server.post('/api(v1/restaurantes', async (req, res) => {
+    const { name, borough, cuisine, address, grades } = req.body;
+
+    if (!name || !borough || !cuisine || !address || !grades ) return res.status(400).send(messageMissingData);
+
+    try {
+        const restaurantes = await loadRestaurantsData();
+        const newId = await generateCodigo(restaurantes);
+
+        const restaurante = {
+            restaurant_id: 
+            newId,
+            name,
+            borough,
+            cuisine,
+            address,
+            grades: grades || []
+        };
+
+        restaurantes.push(restaurante);
+
+        await fs.writeFile (path.join(__dirname, 'data', 'data.json'), JSON.stringify(restaurante, null, 2));
+        res.status(201).send(JSON.stringify({ message: 'Restaurante creado', payload: restaurante }));
+    } catch (error) {
+        console.log(error.message);
+        res.status(500).send(messageErrorServer);
+    }
+});
+
+
 
