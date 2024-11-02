@@ -32,4 +32,20 @@ server.get('/api/v1/restaurantes', async (req, res) => {
 });
 
 
+// Obtener un restaurante específico (método GET)
+server.get('/api/v1/restaurantes/:id', async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const restaurantes = await loadRestaurantsData();
+        const restaurante = restaurantes.find(r => r.restaurant_id == id);
+
+        if (!restaurante) return res.status(400).send(messageNotFount);
+
+        res.status(200).send(JSON.stringify({ payload: restaurante }));
+    } catch (error) {
+        console.log(error.message);
+        res.status(500).send(messageErrorServer);
+    }
+});
 
