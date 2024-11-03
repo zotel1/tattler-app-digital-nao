@@ -1,5 +1,5 @@
 import express, { json, urlencoded } from 'express';
-import { desconnect, generateCodigo, load, loadRestaurantsData } from './connections/local_connections_db.js';
+import { desconnect, generateCodigo, loadRestaurantsData, updateRestaurant, deleteRestaurant, updateRestaurant, deleteRestaurant } from './connections/local_connections_db.js';
 
 const server = express();
 
@@ -15,7 +15,7 @@ server.use(urlencoded({ extended: true }));
 server.get('/api/v1/restaurantes', async (req, res) => {
     const { borough, cuisine } = req.query;
     try {
-        let restaurantes =await loadRestaurantsData();
+        let restaurantes = await loadRestaurantsData();
 
         // filtrar por borough o cuisine, o devolver todos los restaurantes
         if (borough) {
@@ -77,6 +77,50 @@ server.post('/api(v1/restaurantes', async (req, res) => {
         console.log(error.message);
         res.status(500).send(messageErrorServer);
     }
+});
+
+// Actualizar un restaurante (método PUT)
+server.put('/api/v1/restaurantes/:id', async (req, res) => {
+    const { id } = req.params;
+    const { name, borough, cuisine, address, grades } = req.body;
+
+    if (!name || !borough || !cuisine || !address) return res.status(400).send(messageMissingData);
+
+    try {
+        const updateRestaurant = await updateRestaurant(id, {name, borough, cuisine, address, grades });
+
+        if (!updateRestaurant) {
+            return res.status(404).send(messageNotFount);
+        }
+
+        res.status(200).send(JSON.stringify({ message: 'Restaurante actualizado', payload: updateRestaurant }));
+    } catch (error) {
+        console.log(error.message);
+        res.status(500).send(messageErrorServer);
+    }
+});
+
+// Eliminar un restaurante (método DELETE)
+server.delete('/api/v1/restaurantes/:id', async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const deleteRestaurant = await deleteRestaurant(id);
+
+        if (!deleteRestaurant) {
+            return res.status(404).send(messageNotFount);
+        }
+
+        res.status(200).send(JSON.stringify({ message: 'Restaurante eliminado', payload: deleteRestaurant }));
+    } catch (error) {
+        console.log(error.message);
+        res.status(500).send(messageErrorServer);
+    }
+});
+
+// Método oyente de solicitudes
+server.listen(procces.env.SERVER_PORT || 3005, () => {
+    console.log(`Server running on port ${process.env.SERVER_PORT || 3005}`);
 });
 
 
