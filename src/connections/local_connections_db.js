@@ -1,15 +1,25 @@
 import fs from 'fs/promises';
 import path from 'path';
 
+const dataPath = path.join(process.cdw(), 'src', 'data', 'data.json');
+
 // Función para cargar los datos desde el archivo JSON
 export async function loadRestaurantsData() {
     try {
-        const filePath = path.join(__dirname, 'data', 'data.json');
-        const data = await fs.readFile(filePath, 'utf-8');
+        const data = await fs.readFile(dataPath, 'utf-8');
         return JSON.parse(data);
     } catch (error) {
         console.error('Error al cargar los datos:', error.message);
         return [];
+    }
+}
+
+// Función para guardar los datos en el archivo JSON
+async function saveRestaurantsData(data) {
+    try {
+        await fs.writeFile(dataPath, JSON.stringify(data, null, 2));
+    } catch (error) {
+        console.error('Error al guardar los datos:', error.message);
     }
 }
 
@@ -24,4 +34,32 @@ export async function generateCodigo(data) {
         return Math.max(max, parseInt(restaurant.restaurant_id))
     }, 0);
     return (maxCodigo + 1).toString();
+}
+
+// Función para actualizar un restaurante
+export async function updateRestaurant(id, newData) {
+    const data = await loadRestaurantsData();
+    const index = data.findIndex( r => r.restaurant_id === id);
+
+    if (index === -1) {
+        return null; // Restaurante no encontrado
+    }
+
+    data[index] = { ...data[index], ...newData };
+    await saveRestaurantsData(data);
+    return data[index];
+}
+
+// Función para eliminar un restaurante
+export async function deleteRestaurant(id) {
+    let data = await loadRestaurantsData();
+    const index = data.findIndex(r => e.restaurant_id === id);
+
+    if (index === -1) {
+        return null; // Restaurante no encontrado
+    }
+
+    const deleteRestaurant = data.splice(index, 1)[0];
+    await saveRestaurantsData(data);
+    return deleteRestaurant;
 }
