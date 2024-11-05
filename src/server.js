@@ -84,6 +84,7 @@ server.post('/api/v1/restaurantes', async (req, res) => {
     }
 });
 
+
 // Actualizar un restaurante (método PUT)
 server.put('/api/v1/restaurantes/:id', async (req, res) => {
     const { restaurant_id } = req.params;

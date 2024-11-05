@@ -113,6 +113,7 @@ server.delete('/api/v1/restaurantes/:id', async (req, res) => {
     }
 });
 
+
 /* Método oyente de solicitudes
 server.listen(process.env.SERVER_PORT || 3005, () => {
     console.log(`Server running on port ${process.env.SERVER_PORT || 3005}`);
