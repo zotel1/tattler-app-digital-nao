@@ -1,7 +1,5 @@
 import express, { json, urlencoded } from 'express';
 import { desconnect, generateCodigo, loadRestaurantsData, updateRestaurant, deleteRestaurant } from './connections/local_connections_db.js';
-import fs from 'fs/promises';
-import path from 'path';
 
 const server = express();
 
@@ -19,7 +17,6 @@ server.get('/api/v1/restaurantes', async (req, res) => {
     try {
         let restaurantes = await loadRestaurantsData();
 
-        // Filtrar por borough o cuisine, o devolver todos los restaurantes
         if (borough) {
             restaurantes = restaurantes.filter(restaurant => restaurant.borough === borough);
         } else if (cuisine) {
@@ -70,9 +67,6 @@ server.post('/api/v1/restaurantes', async (req, res) => {
         };
 
         restaurantes.push(restaurante);
-
-        const dataPath = path.join(process.cwd(), 'src', 'data', 'data.json');
-        await fs.writeFile(dataPath, JSON.stringify(restaurantes, null, 2));
         res.status(201).send(JSON.stringify({ message: 'Restaurante creado', payload: restaurante }));
     } catch (error) {
         console.log(error.message);
@@ -117,6 +111,11 @@ server.delete('/api/v1/restaurantes/:id', async (req, res) => {
         console.log(error.message);
         res.status(500).send(messageErrorServer);
     }
+});
+
+// Método oyente de solicitudes
+server.listen(process.env.SERVER_PORT || 3005, () => {
+    console.log(`Server running on port ${process.env.SERVER_PORT || 3005}`);
 });
 
 // Método oyente de solicitudes
