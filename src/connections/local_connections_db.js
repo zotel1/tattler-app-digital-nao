@@ -1,5 +1,8 @@
 import { restaurantsData } from '../data/data.js';
 
+import dotenv from 'dotenv';
+dotenv.config();
+
 // Función para cargar los datos desde el archivo de datos
 export async function loadRestaurantsData() {
     return restaurantsData; // Devuelve los datos directamente
