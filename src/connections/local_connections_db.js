@@ -1,7 +1,9 @@
 import fs from 'fs/promises';
 import path from 'path';
+import dotenv from 'dotenv';
+dotenv.config();
 
-const dataPath = path.join(process.cdw(), 'src', 'data', 'data.json');
+const dataPath = path.join(process.cwd(), 'src', 'data', 'data.json');
 
 // Función para cargar los datos desde el archivo JSON
 export async function loadRestaurantsData() {
@@ -23,7 +25,7 @@ async function saveRestaurantsData(data) {
     }
 }
 
-// Función para simular la desconeción 
+// Función para simular la desconexión 
 export async function desconnect() {
     console.log('Desconectando...');
 }
@@ -31,7 +33,7 @@ export async function desconnect() {
 // Función para generar un nuevo código de restaurante
 export async function generateCodigo(data) {
     const maxCodigo = data.reduce((max, restaurant) => {
-        return Math.max(max, parseInt(restaurant.restaurant_id))
+        return Math.max(max, parseInt(restaurant.restaurant_id));
     }, 0);
     return (maxCodigo + 1).toString();
 }
@@ -39,7 +41,7 @@ export async function generateCodigo(data) {
 // Función para actualizar un restaurante
 export async function updateRestaurant(id, newData) {
     const data = await loadRestaurantsData();
-    const index = data.findIndex( r => r.restaurant_id === id);
+    const index = data.findIndex(r => r.restaurant_id === id);
 
     if (index === -1) {
         return null; // Restaurante no encontrado
@@ -53,13 +55,13 @@ export async function updateRestaurant(id, newData) {
 // Función para eliminar un restaurante
 export async function deleteRestaurant(id) {
     let data = await loadRestaurantsData();
-    const index = data.findIndex(r => e.restaurant_id === id);
+    const index = data.findIndex(r => r.restaurant_id === id);
 
     if (index === -1) {
         return null; // Restaurante no encontrado
     }
 
-    const deleteRestaurant = data.splice(index, 1)[0];
+    const deletedRestaurant = data.splice(index, 1)[0];
     await saveRestaurantsData(data);
-    return deleteRestaurant;
+    return deletedRestaurant;
 }
