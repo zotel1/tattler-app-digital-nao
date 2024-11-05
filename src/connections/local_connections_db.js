@@ -1,31 +1,11 @@
-import fs from 'fs/promises';
-import path from 'path';
-import dotenv from 'dotenv';
-dotenv.config();
+import { restaurantsData } from '../data/data.js';
 
-const dataPath = path.join(process.cwd(), 'src', 'data', 'data.json');
-
-// Función para cargar los datos desde el archivo JSON
+// Función para cargar los datos desde el archivo de datos
 export async function loadRestaurantsData() {
-    try {
-        const data = await fs.readFile(dataPath, 'utf-8');
-        return JSON.parse(data);
-    } catch (error) {
-        console.error('Error al cargar los datos:', error.message);
-        return [];
-    }
+    return restaurantsData; // Devuelve los datos directamente
 }
 
-// Función para guardar los datos en el archivo JSON
-async function saveRestaurantsData(data) {
-    try {
-        await fs.writeFile(dataPath, JSON.stringify(data, null, 2));
-    } catch (error) {
-        console.error('Error al guardar los datos:', error.message);
-    }
-}
-
-// Función para simular la desconexión 
+// Simulación de desconexión
 export async function desconnect() {
     console.log('Desconectando...');
 }
@@ -40,28 +20,24 @@ export async function generateCodigo(data) {
 
 // Función para actualizar un restaurante
 export async function updateRestaurant(id, newData) {
-    const data = await loadRestaurantsData();
-    const index = data.findIndex(r => r.restaurant_id === id);
+    const index = restaurantsData.findIndex(r => r.restaurant_id === id);
 
     if (index === -1) {
         return null; // Restaurante no encontrado
     }
 
-    data[index] = { ...data[index], ...newData };
-    await saveRestaurantsData(data);
-    return data[index];
+    restaurantsData[index] = { ...restaurantsData[index], ...newData };
+    return restaurantsData[index];
 }
 
 // Función para eliminar un restaurante
 export async function deleteRestaurant(id) {
-    let data = await loadRestaurantsData();
-    const index = data.findIndex(r => r.restaurant_id === id);
+    const index = restaurantsData.findIndex(r => r.restaurant_id === id);
 
     if (index === -1) {
         return null; // Restaurante no encontrado
     }
 
-    const deletedRestaurant = data.splice(index, 1)[0];
-    await saveRestaurantsData(data);
+    const deletedRestaurant = restaurantsData.splice(index, 1)[0];
     return deletedRestaurant;
 }
