@@ -1,13 +1,11 @@
 import express, { json, urlencoded } from 'express';
-// eslint-disable-next-line sort-imports
-
-import { desconnect, connectToCollection, generateCodigo } from './connections/mongo_connections_db.js';
+import { disconnect, connectToCollection, generateCodigo } from './connections/mongo_connections_db.js';
 
 const server = express();
 
-const messageNotFound = JSON.stringify({ message: 'No hay ningún restaurante registrado con ese nombre.' });
-const messageMissingData = JSON.stringify({ message: 'Faltan datos relevantes.' });
-const messageErrorServer = JSON.stringify({ message: 'Se ha generado un error en el servidor.' });
+const messageNotFound = { message: 'No hay ningún restaurante registrado con ese nombre.' };
+const messageMissingData = { message: 'Faltan datos relevantes.' };
+const messageErrorServer = { message: 'Se ha generado un error en el servidor.' };
 
 // Middlewares
 server.use(json());
@@ -16,44 +14,34 @@ server.use(urlencoded({ extended: true }));
 // Obtener todos los registros de los restaurantes disponibles (método GET)
 server.get('/api/v1/restaurantes', async (req, res) => {
     const { borough, cuisine } = req.query;
-    let restaurantes = [];
-
     try {
-        const collection = await connectToCollection('restaurantes');
+        const collection = await connectToCollection('restaurants');
+        let query = {};
 
-        if (borough) {
-            restaurantes = await collection.find({ borough }).sort({ name: 1 }).toArray();
-        } else if (cuisine) {
-            restaurantes = await collection.find({ cuisine }).sort({ name: 1 }).toArray();
-        } else {
-            restaurantes = await collection.find().toArray();
-        }
+        if (borough) query.borough = borough;
+        if (cuisine) query.cuisine = cuisine;
 
-        res.status(200).send(JSON.stringify({ payload: restaurantes }));
+        const restaurantes = await collection.find(query).sort({ name: 1 }).toArray();
+        res.status(200).json({ payload: restaurantes });
     } catch (error) {
-        console.log(error.message);
-        res.status(500).send(messageErrorServer);
-    } finally {
-        await desconnect();
+        console.error(error.message);
+        res.status(500).json(messageErrorServer);
     }
 });
 
 // Obtener un restaurante específico (método GET)
 server.get('/api/v1/restaurantes/:id', async (req, res) => {
     const { id } = req.params;
-
     try {
-        const collection = await connectToCollection('restaurantes');
-        const restaurante = await collection.findOne({ id: { $eq: id } });
+        const collection = await connectToCollection('restaurants');
+        const restaurante = await collection.findOne({ restaurant_id: id });
 
-        if (!restaurante) return res.status(400).send(messageNotFound);
+        if (!restaurante) return res.status(404).json(messageNotFound);
 
-        res.status(200).send(JSON.stringify({ payload: restaurante }));
+        res.status(200).json({ payload: restaurante });
     } catch (error) {
-        console.log(error.message);
-        res.status(500).send(messageErrorServer);
-    } finally {
-        await desconnect();
+        console.error(error.message);
+        res.status(500).json(messageErrorServer);
     }
 });
 
@@ -61,12 +49,14 @@ server.get('/api/v1/restaurantes/:id', async (req, res) => {
 server.post('/api/v1/restaurantes', async (req, res) => {
     const { name, borough, cuisine, address, grades } = req.body;
 
-    if (!name || !borough || !cuisine || !address) return res.status(400).send(messageMissingData);
+    if (!name || !borough || !cuisine || !address) return res.status(400).json(messageMissingData);
 
     try {
-        const collection = await connectToCollection('restaurantes');
+        const collection = await connectToCollection('restaurants');
+        const newRestaurantId = await generateCodigo(collection);
+
         const restaurante = {
-            id: await generateCodigo(collection),
+            restaurant_id: newRestaurantId,
             name,
             borough,
             cuisine,
@@ -75,58 +65,49 @@ server.post('/api/v1/restaurantes', async (req, res) => {
         };
 
         await collection.insertOne(restaurante);
-        res.status(201).send(JSON.stringify({ message: 'Restaurante creado', payload: restaurante }));
+        res.status(201).json({ message: 'Restaurante creado', payload: restaurante });
     } catch (error) {
-        console.log(error.message);
-        res.status(500).send(messageErrorServer);
-    } finally {
-        await desconnect();
+        console.error(error.message);
+        res.status(500).json(messageErrorServer);
     }
 });
 
-
 // Actualizar un restaurante (método PUT)
 server.put('/api/v1/restaurantes/:id', async (req, res) => {
-    const { restaurant_id } = req.params;
-    const { name, borough, cuisine, address } = req.body;
+    const { id } = req.params;
+    const { name, borough, cuisine, address, grades } = req.body;
 
-    if (!name || !borough || !cuisine || !address) return res.status(400).send(messageMissingData);
+    if (!name || !borough || !cuisine || !address) return res.status(400).json(messageMissingData);
 
     try {
-        const collection = await connectToCollection('restaurantes');
-        let restaurante = await collection.findOne({ restaurant_id: { $eq: restaurant_id } });
+        const collection = await connectToCollection('restaurants');
+        const result = await collection.findOneAndUpdate(
+            { restaurant_id: id },
+            { $set: { name, borough, cuisine, address, grades } },
+            { returnOriginal: false }
+        );
 
-        if (!restaurante) return res.status(400).send(messageNotFound);
-
-        restaurante = { name, borough, cuisine, address };
-
-        await collection.updateOne({ restaurant_id }, { $set: restaurante });
-        return res.status(200).send(JSON.stringify({ message: 'Restaurante actualizado', payload: { id, ...restaurante } }));
+        if (!result.value) return res.status(404).json(messageNotFound);
+        res.status(200).json({ message: 'Restaurante actualizado', payload: result.value });
     } catch (error) {
-        console.log(error.message);
-        res.status(500).send(messageErrorServer);
-    } finally {
-        await desconnect();
+        console.error(error.message);
+        res.status(500).json(messageErrorServer);
     }
 });
 
 // Eliminar un restaurante (método DELETE)
 server.delete('/api/v1/restaurantes/:id', async (req, res) => {
-    const { restaurant_id } = req.params;
+    const { id } = req.params;
 
     try {
-        const collection = await connectToCollection('restaurantes');
-        const restaurante = await collection.findOne({ restaurant_id: { $eq: restaurant_id } });
+        const collection = await connectToCollection('restaurants');
+        const result = await collection.deleteOne({ restaurant_id: id });
 
-        if (!restaurante) return res.status(400).send(messageNotFound);
-
-        await collection.deleteOne({ id });
-        res.status(200).send(JSON.stringify({ message: 'Restaurante eliminado', payload: { id, ...restaurante } }));
+        if (!result.deletedCount) return res.status(404).json(messageNotFound);
+        res.status(200).json({ message: 'Restaurante eliminado' });
     } catch (error) {
-        console.log(error.message);
-        res.status(500).send(messageErrorServer);
-    } finally {
-        await desconnect();
+        console.error(error.message);
+        res.status(500).json(messageErrorServer);
     }
 });
 
@@ -136,6 +117,7 @@ server.use('*', (req, res) => {
 });
 
 // Método oyente de solicitudes
-server.listen(process.env.SERVER_PORT, process.env.SERVER_HOST, () => {
-    console.log(`Ejecutándose en http://${process.env.SERVER_HOST}:${process.env.SERVER_PORT}/api/v1/restaurantes`);
+const PORT = process.env.SERVER_PORT || 3005;
+server.listen(PORT, () => {
+    console.log(`Ejecutándose en http://localhost:${PORT}/api/v1/restaurantes`);
 });
