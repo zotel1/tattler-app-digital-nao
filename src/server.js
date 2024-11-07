@@ -1,17 +1,14 @@
 import express, { json, urlencoded } from 'express';
-import { disconnect, connectToCollection, generateCodigo } from './connections/mongo_connections_db.js';
+import { connectToCollection, disconnect } from './connections/mongo_connections_db.js';
+import { createRestaurant } from './utils/createRestaurant.js';
+import { BOROUGHS, CUISINES } from './constants/fields.js';
 
 const server = express();
 
-const messageNotFound = { message: 'No hay ningún restaurante registrado con ese nombre.' };
-const messageMissingData = { message: 'Faltan datos relevantes.' };
-const messageErrorServer = { message: 'Se ha generado un error en el servidor.' };
-
-// Middlewares
 server.use(json());
 server.use(urlencoded({ extended: true }));
 
-// Obtener todos los registros de los restaurantes disponibles (método GET)
+// Obtener todos los registros de los restaurantes (método GET)
 server.get('/api/v1/restaurantes', async (req, res) => {
     const { borough, cuisine } = req.query;
     try {
@@ -25,7 +22,7 @@ server.get('/api/v1/restaurantes', async (req, res) => {
         res.status(200).json({ payload: restaurantes });
     } catch (error) {
         console.error(error.message);
-        res.status(500).json(messageErrorServer);
+        res.status(500).json({ message: 'Error en el servidor' });
     }
 });
 
@@ -36,39 +33,36 @@ server.get('/api/v1/restaurantes/:id', async (req, res) => {
         const collection = await connectToCollection('restaurants');
         const restaurante = await collection.findOne({ restaurant_id: id });
 
-        if (!restaurante) return res.status(404).json(messageNotFound);
+        if (!restaurante) return res.status(404).json({ message: 'Restaurante no encontrado' });
 
         res.status(200).json({ payload: restaurante });
     } catch (error) {
         console.error(error.message);
-        res.status(500).json(messageErrorServer);
+        res.status(500).json({ message: 'Error en el servidor' });
     }
 });
 
 // Crear un nuevo restaurante (método POST)
 server.post('/api/v1/restaurantes', async (req, res) => {
-    const { name, borough, cuisine, address, grades } = req.body;
-
-    if (!name || !borough || !cuisine || !address) return res.status(400).json(messageMissingData);
+    const { name, borough, cuisine, address, grades, comments } = req.body;
+    if (!name || !borough || !cuisine || !address) return res.status(400).json({ message: 'Faltan datos relevantes' });
 
     try {
         const collection = await connectToCollection('restaurants');
-        const newRestaurantId = await generateCodigo(collection);
-
-        const restaurante = {
-            restaurant_id: newRestaurantId,
+        const newRestaurant = createRestaurant({
             name,
-            borough,
-            cuisine,
+            borough: BOROUGHS[borough.toUpperCase()],
+            cuisine: CUISINES[cuisine.toUpperCase()],
             address,
-            grades: grades || []
-        };
+            grades,
+            comments
+        });
 
-        await collection.insertOne(restaurante);
-        res.status(201).json({ message: 'Restaurante creado', payload: restaurante });
+        await collection.insertOne(newRestaurant);
+        res.status(201).json({ message: 'Restaurante creado', payload: newRestaurant });
     } catch (error) {
         console.error(error.message);
-        res.status(500).json(messageErrorServer);
+        res.status(500).json({ message: 'Error en el servidor' });
     }
 });
 
@@ -77,7 +71,7 @@ server.put('/api/v1/restaurantes/:id', async (req, res) => {
     const { id } = req.params;
     const { name, borough, cuisine, address, grades } = req.body;
 
-    if (!name || !borough || !cuisine || !address) return res.status(400).json(messageMissingData);
+    if (!name || !borough || !cuisine || !address) return res.status(400).json({ message: 'Faltan datos relevantes' });
 
     try {
         const collection = await connectToCollection('restaurants');
@@ -87,11 +81,11 @@ server.put('/api/v1/restaurantes/:id', async (req, res) => {
             { returnOriginal: false }
         );
 
-        if (!result.value) return res.status(404).json(messageNotFound);
+        if (!result.value) return res.status(404).json({ message: 'Restaurante no encontrado' });
         res.status(200).json({ message: 'Restaurante actualizado', payload: result.value });
     } catch (error) {
         console.error(error.message);
-        res.status(500).json(messageErrorServer);
+        res.status(500).json({ message: 'Error en el servidor' });
     }
 });
 
@@ -103,17 +97,12 @@ server.delete('/api/v1/restaurantes/:id', async (req, res) => {
         const collection = await connectToCollection('restaurants');
         const result = await collection.deleteOne({ restaurant_id: id });
 
-        if (!result.deletedCount) return res.status(404).json(messageNotFound);
+        if (!result.deletedCount) return res.status(404).json({ message: 'Restaurante no encontrado' });
         res.status(200).json({ message: 'Restaurante eliminado' });
     } catch (error) {
         console.error(error.message);
-        res.status(500).json(messageErrorServer);
+        res.status(500).json({ message: 'Error en el servidor' });
     }
-});
-
-// Control de rutas inexistentes
-server.use('*', (req, res) => {
-    res.status(404).send(`<h1>Error 404</h1><h3>La URL indicada no existe en el servidor</h3>`);
 });
 
 // Método oyente de solicitudes
