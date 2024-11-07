@@ -1,7 +1,7 @@
 import express, { json, urlencoded } from 'express';
 import { connectToCollection, disconnect } from './connections/mongo_connections_db.js';
 import { createRestaurant } from './utils/createRestaurant.js';
-import { BOROUGHS, CUISINES } from './constants/fields.js';
+import { BOROUGHS, CUISINES } from './data/fields.js';
 
 const server = express();
 
