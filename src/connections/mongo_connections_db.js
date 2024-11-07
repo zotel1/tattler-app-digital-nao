@@ -6,13 +6,13 @@ dotenv.config();
 const client = new MongoClient(process.env.DATABASE_URL);
 let db = null;
 
-// Función para conectar a la base de datos solo una vez
+// Conexión a MongoDB Atlas solo una vez
 async function connectToDatabase() {
     try {
         if (!db) {
             await client.connect();
             console.log('🔌 Conectado a MongoDB Atlas');
-            db = client.db(process.env.DATABASE_NAME);
+            db = client.db(process.env.DATABASE_NAME); // Nombre de la base de datos
         }
         return db;
     } catch (error) {
@@ -27,7 +27,7 @@ export async function connectToCollection(collectionName) {
     return database.collection(collectionName);
 }
 
-// Función para desconectar de MongoDB
+// Desconectar de MongoDB (opcional)
 export async function disconnect() {
     try {
         await client.close();
@@ -37,9 +37,9 @@ export async function disconnect() {
     }
 }
 
-// Generar un nuevo código para un restaurante
+// Generar un nuevo código de restaurante
 export async function generateCodigo(collection) {
     const documentMaxCodigo = await collection.find().sort({ restaurant_id: -1 }).limit(1).toArray();
     const maxCodigo = documentMaxCodigo[0]?.restaurant_id ?? 0;
-    return (parseInt(maxCodigo) + 1).toString(); // Asegúrate de devolver un string
+    return (parseInt(maxCodigo) + 1).toString(); // Convierte a string
 }
