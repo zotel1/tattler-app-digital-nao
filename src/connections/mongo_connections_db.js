@@ -12,7 +12,12 @@ async function connectToDatabase() {
         if (!db) {
             await client.connect();
             console.log('🔌 Conectado a MongoDB Atlas');
-            db = client.db(process.env.DATABASE_NAME); // Nombre de la base de datos
+            db = client.db(process.env.DATABASE_NAME);
+
+            // Crear índice geoespacial en `address.coord` si no existe
+            const collection = db.collection('restaurants');
+            await collection.createIndex({ "address.coord": "2dsphere" });
+            console.log('Índice geoespacial 2dsphere en `address.coord` creado o verificado');
         }
         return db;
     } catch (error) {
@@ -35,11 +40,4 @@ export async function disconnect() {
     } catch (error) {
         console.error('Error al desconectar de MongoDB:', error.message);
     }
-}
-
-// Generar un nuevo código de restaurante
-export async function generateCodigo(collection) {
-    const documentMaxCodigo = await collection.find().sort({ restaurant_id: -1 }).limit(1).toArray();
-    const maxCodigo = documentMaxCodigo[0]?.restaurant_id ?? 0;
-    return (parseInt(maxCodigo) + 1).toString(); // Convierte a string
 }
