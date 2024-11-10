@@ -73,6 +73,27 @@ server.get('/api/v1/restaurantes/prox', async (req, res) => {
     }
 });
 
+// Ruta para buscar restaurantes por tipo de comida y/o nombre (método GET)
+server.get('/api/v1/restaurantes/busqueda', async (req, res) => {
+    const { cuisine, name } = req.query; // Obtener parámetros de consulta opcionales
+
+    try {
+        const collection = await connectToCollection('restaurants');
+
+        // Crear una consulta dinámica según los parámetros proporcionados
+        let query = {};
+        if (cuisine) query.cuisine = { $regex: new RegExp(cuisine, 'i') }; // Búsqueda parcial e insensible a mayúsculas
+        if (name) query.name = { $regex: new RegExp(name, 'i') }; // Búsqueda parcial e insensible a mayúsculas
+
+        const restaurantes = await collection.find(query).sort({ name: 1 }).toArray();
+        res.status(200).json({ payload: restaurantes });
+    } catch (error) {
+        console.error('Error en la búsqueda:', error.message);
+        res.status(500).json({ message: 'Error en el servidor' });
+    }
+});
+
+
 // Crear un nuevo restaurante (método POST)
 server.post('/api/v1/restaurantes', async (req, res) => {
     const { name, borough, cuisine, address, grades, comments } = req.body;
