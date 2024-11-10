@@ -4,7 +4,6 @@ import { createRestaurant } from './utils/createRestaurant.js';
 import { BOROUGHS, CUISINES } from './data/fields.js';
 
 const server = express();
-
 server.use(json());
 server.use(urlencoded({ extended: true }));
 
@@ -39,6 +38,38 @@ server.get('/api/v1/restaurantes/:id', async (req, res) => {
     } catch (error) {
         console.error(error.message);
         res.status(500).json({ message: 'Error en el servidor' });
+    }
+});
+
+// Obtener restaurantes cercanos (método GET)
+server.get('/api/v1/restaurantes/prox', async (req, res) => {
+    const { longitude, latitude, maxDistanceKm } = req.query;
+
+    if (!longitude || !latitude || !maxDistanceKm) {
+        return res.status(400).json({ message: 'Se requieren los parámetros de longitud, latitud y distancia máxima.' });
+    }
+
+    try {
+        const collection = await connectToCollection('restaurants');
+        const maxDistanceMeters = parseFloat(maxDistanceKm) * 1000;
+
+        const nearbyRestaurants = await collection.aggregate([
+            {
+                $geoNear: {
+                    near: { type: "Point", coordinates: [parseFloat(longitude), parseFloat(latitude)] },
+                    distanceField: "distance",
+                    maxDistance: maxDistanceMeters,
+                    spherical: true,
+                    key: "address.coord"
+                }
+            },
+            { $sort: { distance: 1 } }
+        ]).toArray();
+
+        res.status(200).json({ payload: nearbyRestaurants });
+    } catch (error) {
+        console.error("Error en la consulta geoespacial:", error.message);
+        res.status(500).json({ message: "Error en el servidor" });
     }
 });
 
