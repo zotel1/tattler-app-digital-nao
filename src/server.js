@@ -7,7 +7,7 @@ const server = express();
 server.use(json());
 server.use(urlencoded({ extended: true }));
 
-// Obtener todos los registros de los restaurantes (método GET)
+// Obtener todos los registros de los restaurantes método GET, url de ejemplo (http://127.0.0.1:3005/api/v1/restaurantes)
 server.get('/api/v1/restaurantes', async (req, res) => {
     const { borough, cuisine } = req.query;
     try {
@@ -25,7 +25,7 @@ server.get('/api/v1/restaurantes', async (req, res) => {
     }
 });
 
-// Obtener un restaurante específico (método GET)
+// Obtener un restaurante específico (método GET), url de ejemplo (http://127.0.0.1:3005/api/v1/restaurantes/40356151)
 server.get('/api/v1/restaurantes/:id', async (req, res) => {
     const { id } = req.params;
     try {
@@ -41,30 +41,33 @@ server.get('/api/v1/restaurantes/:id', async (req, res) => {
     }
 });
 
-// Obtener restaurantes cercanos (método GET)
-server.get('/api/v1/restaurantes/prox', async (req, res) => {
+// Búsqueda geoespacial de restaurantes cercanos url ejemplo (http://localhost:3005/api/v1/restaurants/cerca?longitude=-73.8803827&latitude=40.7643124&maxDistanceKm=5)
+server.get('/api/v1/restaurants/cerca', async (req, res) => {
     const { longitude, latitude, maxDistanceKm } = req.query;
+    const long = parseFloat(longitude);
+    const lat = parseFloat(latitude);
+    const maxDistance = parseFloat(maxDistanceKm) * 1000; // Convertir km a metros
 
-    if (!longitude || !latitude || !maxDistanceKm) {
-        return res.status(400).json({ message: 'Se requieren los parámetros de longitud, latitud y distancia máxima.' });
+    if (isNaN(long) || isNaN(lat) || isNaN(maxDistance)) {
+        return res.status(400).json({ message: 'Los parámetros de longitud, latitud y distancia máxima deben ser números válidos.' });
     }
 
     try {
         const collection = await connectToCollection('restaurants');
-        const maxDistanceMeters = parseFloat(maxDistanceKm) * 1000;
-
-        const nearbyRestaurants = await collection.aggregate([
-            {
-                $geoNear: {
-                    near: { type: "Point", coordinates: [parseFloat(longitude), parseFloat(latitude)] },
-                    distanceField: "distance",
-                    maxDistance: maxDistanceMeters,
-                    spherical: true,
-                    key: "address.coord"
+        const query = {
+            "address.coord": {
+                $nearSphere: {
+                    $geometry: { type: "Point", coordinates: [long, lat] },
+                    $maxDistance: maxDistance
                 }
-            },
-            { $sort: { distance: 1 } }
-        ]).toArray();
+            }
+        };
+
+        const nearbyRestaurants = await collection.find(query).toArray();
+
+        if (nearbyRestaurants.length === 0) {
+            return res.status(404).json({ message: "No se encontraron restaurantes cercanos." });
+        }
 
         res.status(200).json({ payload: nearbyRestaurants });
     } catch (error) {
@@ -73,19 +76,23 @@ server.get('/api/v1/restaurantes/prox', async (req, res) => {
     }
 });
 
-// Ruta para buscar restaurantes por tipo de comida y/o nombre (método GET)
-server.get('/api/v1/restaurantes/busqueda', async (req, res) => {
-    const { cuisine, name } = req.query; // Obtener parámetros de consulta opcionales
+// Ruta para buscar restaurantes por tipo de comida y/o nombre, método GET, url de ejemplo (http://127.0.0.1:3005/api/v1/restaurants/busqueda?cuisine=American)
+server.get('/api/v1/restaurant/busqueda', async (req, res) => {
+    const { cuisine, name } = req.query;
 
     try {
         const collection = await connectToCollection('restaurants');
 
-        // Crear una consulta dinámica según los parámetros proporcionados
         let query = {};
-        if (cuisine) query.cuisine = { $regex: new RegExp(cuisine, 'i') }; // Búsqueda parcial e insensible a mayúsculas
-        if (name) query.name = { $regex: new RegExp(name, 'i') }; // Búsqueda parcial e insensible a mayúsculas
+        if (cuisine) query.cuisine = { $regex: new RegExp(cuisine, 'i') };
+        if (name) query.name = { $regex: new RegExp(name, 'i') };
 
         const restaurantes = await collection.find(query).sort({ name: 1 }).toArray();
+
+        if (restaurantes.length === 0) {
+            return res.status(404).json({ message: "No se encontraron restaurantes con los filtros aplicados." });
+        }
+
         res.status(200).json({ payload: restaurantes });
     } catch (error) {
         console.error('Error en la búsqueda:', error.message);
@@ -93,8 +100,7 @@ server.get('/api/v1/restaurantes/busqueda', async (req, res) => {
     }
 });
 
-
-// Crear un nuevo restaurante (método POST)
+// Crear un nuevo restaurante método POST, url de ejemplo (http://localhost:3005/api/v1/restaurantes)
 server.post('/api/v1/restaurantes', async (req, res) => {
     const { name, borough, cuisine, address, grades, comments } = req.body;
     if (!name || !borough || !cuisine || !address) return res.status(400).json({ message: 'Faltan datos relevantes' });
@@ -118,7 +124,7 @@ server.post('/api/v1/restaurantes', async (req, res) => {
     }
 });
 
-// Actualizar un restaurante (método PUT)
+// Actualizar un restaurante método PUT, url de ejemplo (http://127.0.0.1:3005/api/v1/restaurantes/672d36e30dbc61fd13236b6d)
 server.put('/api/v1/restaurantes/:id', async (req, res) => {
     const { id } = req.params;
     const { name, borough, cuisine, address, grades } = req.body;
@@ -141,7 +147,7 @@ server.put('/api/v1/restaurantes/:id', async (req, res) => {
     }
 });
 
-// Eliminar un restaurante (método DELETE)
+// Eliminar un restaurante método DELETE, url de ejemplo (http://127.0.0.1:3005/api/v1/restaurantes/672d36e30dbc61fd13236b6d)
 server.delete('/api/v1/restaurantes/:id', async (req, res) => {
     const { id } = req.params;
 
@@ -157,7 +163,6 @@ server.delete('/api/v1/restaurantes/:id', async (req, res) => {
     }
 });
 
-// Método oyente de solicitudes
 const PORT = process.env.SERVER_PORT || 3005;
 server.listen(PORT, () => {
     console.log(`Ejecutándose en http://localhost:${PORT}/api/v1/restaurantes`);
